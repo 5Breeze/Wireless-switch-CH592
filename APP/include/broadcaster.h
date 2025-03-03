@@ -26,7 +26,7 @@ extern "C" {
  */
 
 
- #define STATUS_FLAG_BATTERY_MASK           100  // 前两位表示电池状态
+ #define STATUS_FLAG_FULL_BATTERY           100  // 前两位表示电池状态
  #define STATUS_FLAG_MEDIUM_BATTERY         60  // 中等电量
  #define STATUS_FLAG_LOW_BATTERY            30  // 低电量
  #define STATUS_FLAG_CRITICALLY_LOW_BATTERY 10  // 严重低电量
@@ -75,6 +75,12 @@ static signed short RoughCalib_Value = 0;
 
 // 电池电量标志
 static uint8_t status_flag;
+
+// 广播开启状态标志
+static uint8_t adv_flag = 1;
+
+// 广播预关闭状态标志
+static uint8_t pre_adv_flag;
 
 //按键状态标志位
 static uint8_t FLAG_key1, FLAG_key2, FLAG_key3, FLAG_key4;

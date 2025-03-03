@@ -57,16 +57,14 @@ __HIGH_CODE
 void set_battery()
 {
     uint16_t battery_level = sample_battery_voltage();
-    // 清除电池状态相关的前两位
-    status_flag &= (~STATUS_FLAG_BATTERY_MASK);
     if(battery_level > 3000){
-        // 电量大于80%，不设置任何标志
+        status_flag = STATUS_FLAG_FULL_BATTERY; // 满电量
     } else if(battery_level > 2800){
-        status_flag |= STATUS_FLAG_MEDIUM_BATTERY; // 中等电量
+        status_flag = STATUS_FLAG_MEDIUM_BATTERY; // 中等电量
     } else if(battery_level > 2500){
-        status_flag |= STATUS_FLAG_LOW_BATTERY;    // 低电量
+        status_flag = STATUS_FLAG_LOW_BATTERY;    // 低电量
     } else {
-        status_flag |= STATUS_FLAG_CRITICALLY_LOW_BATTERY; // 严重低电量
+        status_flag = STATUS_FLAG_CRITICALLY_LOW_BATTERY; // 严重低电量
     }
 }
 
@@ -77,6 +75,10 @@ void update_advert_data() {
     // 更新广播包中的电量数据
     set_battery();
     advertData[6] = status_flag;
+    //更新电压
+
+    //更新按键状态
+    
 
 }
 
@@ -178,7 +180,14 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         // 数据采集并更新广播
         update_advert_data();
         GAP_UpdateAdvertisingData(0, TRUE, sizeof(advertData), advertData);
-        tmos_start_task(Broadcaster_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD);
+
+        //如果当前广播关闭，则开启，否则不进行操作
+        if (adv_flag == 0)
+        {
+            adv_flag = 1;
+            tmos_start_task(Broadcaster_TaskID, SBP_OPEN_ADV_EVT, 16);
+        }
+
         return (events ^ SBP_UPDATE_ADV_EVT);
     }
 
@@ -188,7 +197,11 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
     {
         uint8_t initial_advertising_enable = 0;
         GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
+
         tmos_start_task(Broadcaster_TaskID, SBP_ADV_IN_CONNECTION_EVT, 1600*60);
+
+        adv_flag = 0;
+        pre_adv_flag = 0;
         return (events ^ SBP_CLOSE_ADV_EVT);
     }
 
@@ -196,9 +209,16 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
     //开启广播
     if(events & SBP_OPEN_ADV_EVT)
     {
+        if (pre_adv_flag == 1)
+        {
+            tmos_stop_task(Broadcaster_TaskID, SBP_CLOSE_ADV_EVT);
+        }
+        tmos_start_task(Broadcaster_TaskID, SBP_CLOSE_ADV_EVT, 32000)
+
         uint8_t initial_advertising_enable = 1;
         GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
         tmos_start_task(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT, 16);
+
         return (events ^ SBP_OPEN_ADV_EVT);
     }
 
@@ -207,7 +227,7 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
     //按键服务程序
     if (events & SBP_GPIO_IQR_KEY_1_EVT) {
         
-        if(GPIOB_ReadPortPin(GPIO_Pin_12) != 0)
+        if(GPIOB_ReadPortPin(GPIO_Pin_12) == 0)
         {
             Count_key1 ++ ;
             tmos_start_task(Broadcaster_TaskID, SBP_GPIO_IQR_KEY_1_EVT, 160);//100ms
@@ -235,7 +255,7 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
 
     if (events & SBP_GPIO_IQR_KEY_2_EVT) {
         
-        if(GPIOB_ReadPortPin(GPIO_Pin_13) != 0)
+        if(GPIOB_ReadPortPin(GPIO_Pin_13) == 0)
         {
             Count_key2 ++ ;
             tmos_start_task(Broadcaster_TaskID, SBP_GPIO_IQR_KEY_2_EVT, 160);//100ms
@@ -263,7 +283,7 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
 
     if (events & SBP_GPIO_IQR_KEY_3_EVT) {
         
-        if(GPIOB_ReadPortPin(GPIO_Pin_14) != 0)
+        if(GPIOB_ReadPortPin(GPIO_Pin_14) == 0)
         {
             Count_key3 ++ ;
             tmos_start_task(Broadcaster_TaskID, SBP_GPIO_IQR_KEY_3_EVT, 160);//100ms
@@ -291,7 +311,7 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
 
     if (events & SBP_GPIO_IQR_KEY_4_EVT) {
         
-        if(GPIOB_ReadPortPin(GPIO_Pin_15) != 0)
+        if(GPIOB_ReadPortPin(GPIO_Pin_15) == 0)
         {
             Count_key4 ++ ;
             tmos_start_task(Broadcaster_TaskID, SBP_GPIO_IQR_KEY_4_EVT, 160);//100ms
