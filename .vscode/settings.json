@@ -1,0 +1,21 @@
+{
+    "files.associations": {
+        "*.ejs": "html",
+        "*.json": "jsonc",
+        "*.log": "log",
+        "*.toml": "toml",
+        "Caddyfile": "caddyfile",
+        "*.yml": "yaml",
+        "*.stoverride": "yaml",
+        "*.css": "css",
+        "*.nvm": "code-text-binary",
+        "devinfoservice.h": "c",
+        "hal.h": "c",
+        "config.h": "c",
+        "ch59xble_lib.h": "c",
+        "broadcaster.h": "c"
+    },
+    "C_Cpp.clang_format_sortIncludes": false,
+    "C_Cpp.clang_format_style": "{ BasedOnStyle: WebKit, AllowShortIfStatementsOnASingleLine: true, AllowShortLoopsOnASingleLine: true }",
+    "files.encoding": "gb2312",
+}
