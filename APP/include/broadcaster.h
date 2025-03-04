@@ -26,10 +26,10 @@ extern "C" {
  */
 
 
- #define STATUS_FLAG_FULL_BATTERY           100  // Ç°Á½Î»±íÊ¾µç³Ø×´Ì¬
- #define STATUS_FLAG_MEDIUM_BATTERY         60  // ÖĞµÈµçÁ¿
- #define STATUS_FLAG_LOW_BATTERY            30  // µÍµçÁ¿
- #define STATUS_FLAG_CRITICALLY_LOW_BATTERY 10  // ÑÏÖØµÍµçÁ¿
+ #define STATUS_FLAG_FULL_BATTERY           100  // å‰ä¸¤ä½è¡¨ç¤ºç”µæ± çŠ¶æ€
+ #define STATUS_FLAG_MEDIUM_BATTERY         60  // ä¸­ç­‰ç”µé‡
+ #define STATUS_FLAG_LOW_BATTERY            30  // ä½ç”µé‡
+ #define STATUS_FLAG_CRITICALLY_LOW_BATTERY 10  // ä¸¥é‡ä½ç”µé‡
 
 // Simple BLE Broadcaster Task Events
 #define SBP_START_DEVICE_EVT         0x0001
@@ -43,75 +43,59 @@ extern "C" {
 
 #define SBP_UPDATE_ADV_EVT    0x0080
 #define SBP_CLOSE_ADV_EVT     0x0100
-// ¹ã²¥¼ä¸ô (units of 625us, min is 32 = 20ms)
-#define DEFAULT_ADVERTISING_INTERVAL 3200
+#define SBP_OPEN_ADV_EVT      0x0200
+// å¹¿æ’­é—´éš” (units of 625us, min is 16 = 10ms)
+#define DEFAULT_ADVERTISING_INTERVAL 800 // 500ms
 
-// ¹ã²¥ÔİÍ£¼ä¸ô
+// å¹¿æ’­æš‚åœé—´éš”
 #define SBP_PERIODIC_EVT_PERIOD 6400
 
 /* Delay between advertisement. Advertisment will only be transmitted for a short period of time (20ms) and the device will go to sleep.
 Higher delay = less power consumption, but more inaccurate tracking
  */
 #define DELAY_IN_S 60
-/* Define how often (long) a key will be reused after switching to the next one
-This is for using less keys after all. The interval for one key is (DELAY_IN_S * REUSE_CYCLES => 60s * 30 cycles = changes key every 30 min)
-Smaller number of cycles = key changes more often, but more keys needed.
- */
-#define REUSE_CYCLES 30
-#define REUSE_MAX_KEY 50
-//µçÑ¹´Öµ÷Ğ£×¼Ñ­»·´ÎÊı
+
+//ç”µå‹ç²—è°ƒæ ¡å‡†å¾ªç¯æ¬¡æ•°
 #define BAT_MAX_COUNTS 200
 
-#define REUSE_CYCLES 30
-
-#define MAX_KEYS 50
-// Create space for MAX_KEYS public keys
-static volatile const char public_key[28] = {
-    "OFFLINEFINDINGPUBLICKEYHERE!"
-};
-
-// ADC ²ÉÑù´Öµ÷Æ«²îÖµ
+// ADC é‡‡æ ·ç²—è°ƒåå·®å€¼
 static signed short RoughCalib_Value = 0;
 
-// µç³ØµçÁ¿±êÖ¾
+// ç”µæ± ç”µé‡æ ‡å¿—
 static uint8_t status_flag;
 
-// ¹ã²¥¿ªÆô×´Ì¬±êÖ¾
+// å¹¿æ’­å¼€å¯çŠ¶æ€æ ‡å¿—
 static uint8_t adv_flag = 1;
 
-// ¹ã²¥Ô¤¹Ø±Õ×´Ì¬±êÖ¾
-static uint8_t pre_adv_flag;
-
-//°´¼ü×´Ì¬±êÖ¾Î»
+//æŒ‰é”®çŠ¶æ€æ ‡å¿—ä½
 static uint8_t FLAG_key1, FLAG_key2, FLAG_key3, FLAG_key4;
 
-//°´¼ü×´Ì¬¼ÆÊıÎ»
+//æŒ‰é”®çŠ¶æ€è®¡æ•°ä½
 static uint8_t Count_key1, Count_key2, Count_key3, Count_key4;
 
-//°´¼ü×´Ì¬ÊÂ¼şÎ» 0ÎŞ¹Ø 1µ¥´Î 2³¤°´
+//æŒ‰é”®çŠ¶æ€äº‹ä»¶ä½ 0æ— å…³ 1å•æ¬¡ 2é•¿æŒ‰
 static uint8_t Event_key1, Event_key2, Event_key3, Event_key4;
 
 // Task ID for internal task/event processing
 static uint8_t Broadcaster_TaskID;
 
-/** ¹ã²¥ÔØºÉ */
+/** å¹¿æ’­è½½è· */
 static uint8_t advertData[] = {
-    /* BTHOME±¨Í· */
+    /* BTHOMEæŠ¥å¤´ */
     0x02, 0x01, 0x06, 
     
-    //Êı¾İÓĞĞ§ÔØºÉ
-    0x12, /* ³¤¶È */
-    0x16, /* 16 Î» UUID */
+    //æ•°æ®æœ‰æ•ˆè½½è·
+    0x12, /* é•¿åº¦ */
+    0x16, /* 16 ä½ UUID */
     0xd2, 0xfc, /* UUID */
-    0x44, /* ²»¹æÂÉÊı¾İ¡¢²»¼ÓÃÜ */
-    0x01, 0x00, /* µç³Ø×´Ì¬£¬°Ù·Ö±È bit10*/
-    0x0c, 0x00, 0x00, /* µçÑ¹ 0.001v bit12-bit13*/
-    0x3a, 0x00, /* ¿ª¹Ø1 00ÊÍ·Å 01°´ÏÂ 02Ë«»÷ bit15*/
-    0x3a, 0x00, /* ¿ª¹Ø2 00ÊÍ·Å 01°´ÏÂ 02Ë«»÷ bit17*/
-    0x3a, 0x00, /* ¿ª¹Ø3 00ÊÍ·Å 01°´ÏÂ 02Ë«»÷ bit19*/
-    0x3a, 0x00, /* ¿ª¹Ø4 00ÊÍ·Å 01°´ÏÂ 02Ë«»÷ bit21*/
+    0x44, /* ä¸è§„å¾‹æ•°æ®ã€ä¸åŠ å¯† */
+    0x01, 0x00, /* ç”µæ± çŠ¶æ€ï¼Œç™¾åˆ†æ¯” bit10*/
+    0x3a, 0x00, /* å¼€å…³1 00é‡Šæ”¾ 01æŒ‰ä¸‹ 02åŒå‡» bit12*/
+    0x3a, 0x00, /* å¼€å…³2 00é‡Šæ”¾ 01æŒ‰ä¸‹ 02åŒå‡» bit14*/
+    0x3a, 0x00, /* å¼€å…³3 00é‡Šæ”¾ 01æŒ‰ä¸‹ 02åŒå‡» bit16*/
+    0x3a, 0x00, /* å¼€å…³4 00é‡Šæ”¾ 01æŒ‰ä¸‹ 02åŒå‡» bit18*/
 
-    /* À¶ÑÀÃû³Æ£º¡°Wireless-switch¡± */
+    /* è“ç‰™åç§°ï¼šâ€œWireless-switchâ€ */
     0x11, 0x09, 0x57, 0x69, 0x72, 0x65, 0x6c, 0x65, 0x73, 0x73, 0x2d, 0x73, 0x77, 0x69, 0x74, 0x63, 0x68, 
 
 };

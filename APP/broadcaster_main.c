@@ -3,7 +3,7 @@
  * Author             : WCH
  * Version            : V1.0
  * Date               : 2020/08/06
- * Description        : ¹ã²¥Ó¦ÓÃÖ÷º¯Êı¼°ÈÎÎñÏµÍ³³õÊ¼»¯
+ * Description        : å¹¿æ’­åº”ç”¨ä¸»å‡½æ•°åŠä»»åŠ¡ç³»ç»Ÿåˆå§‹åŒ–
  *********************************************************************************
  * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
  * Attention: This software (modified or not) and binary are used for
@@ -11,7 +11,7 @@
  *******************************************************************************/
 
 /******************************************************************************/
-/* Í·ÎÄ¼ş°üº¬ */
+/* å¤´æ–‡ä»¶åŒ…å« */
 #include "CONFIG.h"
 #include "HAL.h"
 #include "broadcaster.h"
@@ -28,7 +28,7 @@ const uint8_t MacAddr[6] = { 0x84, 0xC2, 0xE4, 0x03, 0x02, 0x02 };
 /*********************************************************************
  * @fn      Main_Circulation
  *
- * @brief   Ö÷Ñ­»·
+ * @brief   ä¸»å¾ªç¯
  *
  * @return  none
  */
@@ -63,7 +63,7 @@ __attribute__((noinline)) void Main_Circulation()
 /*********************************************************************
  * @fn      main
  *
- * @brief   Ö÷º¯Êı
+ * @brief   ä¸»å‡½æ•°
  *
  * @return  none
  */
@@ -78,15 +78,15 @@ int main(void)
     GPIOB_ModeCfg(GPIO_Pin_All, GPIO_ModeIN_PU);
 #endif
 
-    /* ÅäÖÃ»½ĞÑÔ´Îª GPIO - PB12-15 */
+    /* é…ç½®å”¤é†’æºä¸º GPIO - PB12-15 */
     GPIOB_ModeCfg(GPIO_Pin_12, GPIO_ModeIN_PU);
-    GPIOB_ITModeCfg(GPIO_Pin_12, GPIO_ITMode_FallEdge); // ÏÂ½µÑØ»½ĞÑ
+    GPIOB_ITModeCfg(GPIO_Pin_12, GPIO_ITMode_FallEdge); // ä¸‹é™æ²¿å”¤é†’
     GPIOB_ModeCfg(GPIO_Pin_13, GPIO_ModeIN_PU);
-    GPIOB_ITModeCfg(GPIO_Pin_13, GPIO_ITMode_FallEdge); // ÏÂ½µÑØ»½ĞÑ
+    GPIOB_ITModeCfg(GPIO_Pin_13, GPIO_ITMode_FallEdge); // ä¸‹é™æ²¿å”¤é†’
     GPIOB_ModeCfg(GPIO_Pin_14, GPIO_ModeIN_PU);
-    GPIOB_ITModeCfg(GPIO_Pin_14, GPIO_ITMode_FallEdge); // ÏÂ½µÑØ»½ĞÑ
+    GPIOB_ITModeCfg(GPIO_Pin_14, GPIO_ITMode_FallEdge); // ä¸‹é™æ²¿å”¤é†’
     GPIOB_ModeCfg(GPIO_Pin_15, GPIO_ModeIN_PU);
-    GPIOB_ITModeCfg(GPIO_Pin_15, GPIO_ITMode_FallEdge); // ÏÂ½µÑØ»½ĞÑ
+    GPIOB_ITModeCfg(GPIO_Pin_15, GPIO_ITMode_FallEdge); // ä¸‹é™æ²¿å”¤é†’
 
     PFIC_EnableIRQ(GPIO_B_IRQn);
     PWR_PeriphWakeUpCfg(ENABLE, RB_SLP_GPIO_WAKE, RB_SLP_GPIO_WAKE);
@@ -104,7 +104,7 @@ int main(void)
     Main_Circulation();
 }
 
-//ÖĞ¶ÏÒı½ÅÅĞ¶Ï
+//ä¸­æ–­å¼•è„šåˆ¤æ–­
 __INTERRUPT
 __HIGH_CODE
 void GPIOB_IRQHandler( void )

@@ -267,6 +267,7 @@ void GPIOPinRemap(FunctionalState s, uint16_t perph);
  */
 void GPIOAGPPCfg(FunctionalState s, uint16_t perph);
 
+void GPIOB_DisableIT(uint32_t pin);
 #ifdef __cplusplus
 }
 #endif

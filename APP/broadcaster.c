@@ -3,7 +3,7 @@
  * Author             : WCH
  * Version            : V1.0
  * Date               : 2020/08/06
- * Description        : ¹ã²¥Ó¦ÓÃ³ÌĞò£¬³õÊ¼»¯¹ã²¥Á¬½Ó²ÎÊı£¬È»ºó´¦ÓÚ¹ã²¥Ì¬Ò»Ö±¹ã²¥
+ * Description        : å¹¿æ’­åº”ç”¨ç¨‹åºï¼Œåˆå§‹åŒ–å¹¿æ’­è¿æ¥å‚æ•°ï¼Œç„¶åå¤„äºå¹¿æ’­æ€ä¸€ç›´å¹¿æ’­
 
  *********************************************************************************
  * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
@@ -36,11 +36,11 @@ static gapRolesBroadcasterCBs_t Broadcaster_BroadcasterCBs = {
  * PUBLIC FUNCTIONS
  */
 
-// µç³ØµçÑ¹²ÉÑù
+// ç”µæ± ç”µå‹é‡‡æ ·
 __HIGH_CODE
 uint16_t sample_battery_voltage()
 {
-    // VINA Êµ¼ÊµçÑ¹Öµ 1050¡À15mV
+    // VINA å®é™…ç”µå‹å€¼ 1050Â±15mV
     const int vref = 1050;
     ADC_InterBATSampInit();
     static uint8_t calib_count = 0;
@@ -58,13 +58,13 @@ void set_battery()
 {
     uint16_t battery_level = sample_battery_voltage();
     if(battery_level > 3000){
-        status_flag = STATUS_FLAG_FULL_BATTERY; // ÂúµçÁ¿
+        status_flag = STATUS_FLAG_FULL_BATTERY; // æ»¡ç”µé‡
     } else if(battery_level > 2800){
-        status_flag = STATUS_FLAG_MEDIUM_BATTERY; // ÖĞµÈµçÁ¿
+        status_flag = STATUS_FLAG_MEDIUM_BATTERY; // ä¸­ç­‰ç”µé‡
     } else if(battery_level > 2500){
-        status_flag = STATUS_FLAG_LOW_BATTERY;    // µÍµçÁ¿
+        status_flag = STATUS_FLAG_LOW_BATTERY;    // ä½ç”µé‡
     } else {
-        status_flag = STATUS_FLAG_CRITICALLY_LOW_BATTERY; // ÑÏÖØµÍµçÁ¿
+        status_flag = STATUS_FLAG_CRITICALLY_LOW_BATTERY; // ä¸¥é‡ä½ç”µé‡
     }
 }
 
@@ -72,13 +72,66 @@ void set_battery()
 
 __HIGH_CODE
 void update_advert_data() {
-    // ¸üĞÂ¹ã²¥°üÖĞµÄµçÁ¿Êı¾İ
+    // æ›´æ–°å¹¿æ’­åŒ…ä¸­çš„ç”µé‡æ•°æ®
     set_battery();
-    advertData[6] = status_flag;
-    //¸üĞÂµçÑ¹
-
-    //¸üĞÂ°´¼ü×´Ì¬
-    
+    advertData[10] = status_flag;
+    //æ›´æ–°æŒ‰é”®çŠ¶æ€
+    switch(Event_key1)
+    {
+        case 1:
+            advertData[12] = Event_key1;
+            Event_key1 = 0;
+            break;
+        case 4:
+            advertData[12] = Event_key1;
+            Event_key1 = 0;
+            break;
+        default:
+            advertData[12] = 0;
+            break;
+    }
+    switch(Event_key2)
+    {
+        case 1:
+            advertData[14] = Event_key2;
+            Event_key2 = 0;
+            break;
+        case 4:
+            advertData[14] = Event_key2;
+            Event_key2 = 0;
+            break;
+        default:
+            advertData[14] = 0;
+            break;
+    }
+    switch(Event_key3)
+    {
+        case 1:
+            advertData[16] = Event_key3;
+            Event_key3 = 0;
+            break;
+        case 4:
+            advertData[16] = Event_key3;
+            Event_key3 = 0;
+            break;
+        default:
+            advertData[16] = 0;
+            break;
+    }
+    switch(Event_key4)
+    {
+        case 1:
+            advertData[18] = Event_key4;
+            Event_key4 = 0;
+            break;
+        case 4:
+            advertData[18] = Event_key4;
+            Event_key4 = 0;
+            break;
+        default:
+            advertData[18] = 0;
+            break;
+    }
 
 }
 
@@ -104,10 +157,10 @@ void Broadcaster_Init()
 
     // Setup the GAP Broadcaster Role Profile
     {
-        // Device starts advertising upon initialization£¬Ä¬ÈÏÊ¹ÓÃËùÓĞĞÅµÀ
+        // Device starts advertising upon initializationï¼Œé»˜è®¤ä½¿ç”¨æ‰€æœ‰ä¿¡é“
         uint8_t initial_advertising_enable = TRUE;
-        uint8_t initial_adv_event_type = GAP_ADTYPE_ADV_NONCONN_IND; // ²»¿ÉÁ¬½ÓµÄ·Ç¶¨Ïò¹ã²¥
-        uint8_t initial_adv_filter_type = GAP_FILTER_POLICY_ALL; //ÔÊĞíÀ´×ÔÈÎºÎÉè±¸µÄÉ¨ÃèºÍÁ¬½ÓÇëÇó
+        uint8_t initial_adv_event_type = GAP_ADTYPE_ADV_NONCONN_IND; // ä¸å¯è¿æ¥çš„éå®šå‘å¹¿æ’­
+        uint8_t initial_adv_filter_type = GAP_FILTER_POLICY_ALL; //å…è®¸æ¥è‡ªä»»ä½•è®¾å¤‡çš„æ‰«æå’Œè¿æ¥è¯·æ±‚
         
         // Set the GAP Role Parameters
         GAPRole_SetParameter(GAPROLE_ADV_FILTER_POLICY, sizeof(uint8_t), &initial_adv_filter_type);
@@ -118,25 +171,19 @@ void Broadcaster_Init()
 
     // Set advertising interval
     {
-        // ¹ã²¥Ê±¼ä
+        // å¹¿æ’­æ—¶é—´
         uint16_t advInt = DEFAULT_ADVERTISING_INTERVAL;
         GAP_SetParamValue(TGAP_DISC_ADV_INT_MIN, advInt);
         GAP_SetParamValue(TGAP_DISC_ADV_INT_MAX, advInt);
     }
 
-    //Ìî³ä¹ã²¥Êı¾İ
-    volatile const char* src = public_key;
-    const uint8_t* src_bytes = (const uint8_t*) src;
-    memcpy(&advertData[7], &src_bytes[6], 22);
-
-	advertData[29] = public_key[0] >> 6;
     update_advert_data();
 
-    //¿ª»úºó³õÊ¼»¯À¶ÑÀ¹ã²¥
+    //å¼€æœºååˆå§‹åŒ–è“ç‰™å¹¿æ’­
     tmos_set_event(Broadcaster_TaskID, SBP_START_DEVICE_EVT); 
 
-    // ÉèÖÃ¶¨Ê±¶ÁÈ¡µçÑ¹²¢¸üĞÂ¹ã²¥
-    tmos_start_task(Broadcaster_TaskID, SBP_PERIODIC_EVT, 3200);//¿ª»úºó2sµÚÒ»´ÎÖ´ĞĞ³õÊ¼»¯¹ã²¥Êı¾İÈÎÎñ
+    // è®¾ç½®å®šæ—¶è¯»å–ç”µå‹å¹¶æ›´æ–°å¹¿æ’­
+    tmos_start_task(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT, 3200);//å¼€æœºå2sç¬¬ä¸€æ¬¡æ‰§è¡Œåˆå§‹åŒ–å¹¿æ’­æ•°æ®ä»»åŠ¡
 }
 
 /*********************************************************************
@@ -168,6 +215,7 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         return (events ^ SYS_EVENT_MSG);
     }
 
+    //è“ç‰™åˆå§‹åŒ–
     if (events & SBP_START_DEVICE_EVT) {
         // Start the Device
         GAPRole_BroadcasterStartDevice(&Broadcaster_BroadcasterCBs);
@@ -175,13 +223,13 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         return (events ^ SBP_START_DEVICE_EVT);
     }
 
-    //¹ã²¥¸üĞÂ
+    //å¹¿æ’­æ›´æ–°
     if (events & SBP_UPDATE_ADV_EVT) {
-        // Êı¾İ²É¼¯²¢¸üĞÂ¹ã²¥
+        // æ•°æ®é‡‡é›†å¹¶æ›´æ–°å¹¿æ’­
         update_advert_data();
         GAP_UpdateAdvertisingData(0, TRUE, sizeof(advertData), advertData);
 
-        //Èç¹ûµ±Ç°¹ã²¥¹Ø±Õ£¬Ôò¿ªÆô£¬·ñÔò²»½øĞĞ²Ù×÷
+        //å¦‚æœå½“å‰å¹¿æ’­å…³é—­ï¼Œåˆ™å¼€å¯ï¼Œå¦åˆ™ä¸è¿›è¡Œæ“ä½œ
         if (adv_flag == 0)
         {
             adv_flag = 1;
@@ -192,7 +240,7 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
     }
 
 
-    //¹Ø±Õ¹ã²¥Êı¾İ£¬²¢Æô¶¯60sÒ»´ÎµÄ¶¨Ê±¹ã²¥
+    //å…³é—­å¹¿æ’­æ•°æ®ï¼Œå¹¶å¯åŠ¨60sä¸€æ¬¡çš„å®šæ—¶å¹¿æ’­
     if(events & SBP_CLOSE_ADV_EVT)
     {
         uint8_t initial_advertising_enable = 0;
@@ -201,19 +249,14 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         tmos_start_task(Broadcaster_TaskID, SBP_ADV_IN_CONNECTION_EVT, 1600*60);
 
         adv_flag = 0;
-        pre_adv_flag = 0;
         return (events ^ SBP_CLOSE_ADV_EVT);
     }
 
 
-    //¿ªÆô¹ã²¥
+    //å¼€å¯å¹¿æ’­
     if(events & SBP_OPEN_ADV_EVT)
     {
-        if (pre_adv_flag == 1)
-        {
-            tmos_stop_task(Broadcaster_TaskID, SBP_CLOSE_ADV_EVT);
-        }
-        tmos_start_task(Broadcaster_TaskID, SBP_CLOSE_ADV_EVT, 32000)
+        tmos_start_task(Broadcaster_TaskID, SBP_CLOSE_ADV_EVT, 32000);
 
         uint8_t initial_advertising_enable = 1;
         GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
@@ -224,7 +267,7 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
 
 
 
-    //°´¼ü·şÎñ³ÌĞò
+    //æŒ‰é”®æœåŠ¡ç¨‹åº
     if (events & SBP_GPIO_IQR_KEY_1_EVT) {
         
         if(GPIOB_ReadPortPin(GPIO_Pin_12) == 0)
@@ -234,19 +277,19 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         }
         else
         {
-            //¸ù¾İ°´¼üÊ±¼äÀ´ÅĞ¶Ï³¤°´ºÍµ¥´ÎµÄÇø±ğ
+            //æ ¹æ®æŒ‰é”®æ—¶é—´æ¥åˆ¤æ–­é•¿æŒ‰å’Œå•æ¬¡çš„åŒºåˆ«
             if(Count_key1 > 5)
             {
-                Event_key1 = 2;
+                Event_key1 = 4;
             }
             else
             {
                 Event_key1 = 1;
             }
             Count_key1 = 0;
-            GPIOB_ITModeCfg(GPIO_Pin_12, GPIO_ITMode_FallEdge); //»Ö¸´Òı½ÅÏÂ½µÑØ»½ĞÑ
+            GPIOB_ITModeCfg(GPIO_Pin_12, GPIO_ITMode_FallEdge); //æ¢å¤å¼•è„šä¸‹é™æ²¿å”¤é†’
             
-            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//Á¢¿Ì¸üĞÂ¹ã²¥Êı¾İ
+            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//ç«‹åˆ»æ›´æ–°å¹¿æ’­æ•°æ®
 
         }
 
@@ -262,19 +305,19 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         }
         else
         {
-            //¸ù¾İ°´¼üÊ±¼äÀ´ÅĞ¶Ï³¤°´ºÍµ¥´ÎµÄÇø±ğ
+            //æ ¹æ®æŒ‰é”®æ—¶é—´æ¥åˆ¤æ–­é•¿æŒ‰å’Œå•æ¬¡çš„åŒºåˆ«
             if(Count_key2 > 5)
             {
-                Event_key2 = 2;
+                Event_key2 = 4;
             }
             else
             {
                 Event_key2 = 1;
             }
             Count_key2 = 0;
-            GPIOB_ITModeCfg(GPIO_Pin_13, GPIO_ITMode_FallEdge); //»Ö¸´Òı½ÅÏÂ½µÑØ»½ĞÑ
+            GPIOB_ITModeCfg(GPIO_Pin_13, GPIO_ITMode_FallEdge); //æ¢å¤å¼•è„šä¸‹é™æ²¿å”¤é†’
             
-            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//Á¢¿Ì¸üĞÂ¹ã²¥Êı¾İ
+            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//ç«‹åˆ»æ›´æ–°å¹¿æ’­æ•°æ®
 
         }
 
@@ -290,19 +333,19 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         }
         else
         {
-            //¸ù¾İ°´¼üÊ±¼äÀ´ÅĞ¶Ï³¤°´ºÍµ¥´ÎµÄÇø±ğ
+            //æ ¹æ®æŒ‰é”®æ—¶é—´æ¥åˆ¤æ–­é•¿æŒ‰å’Œå•æ¬¡çš„åŒºåˆ«
             if(Count_key3 > 5)
             {
-                Event_key3 = 2;
+                Event_key3 = 4;
             }
             else
             {
                 Event_key3 = 1;
             }
             Count_key3 = 0;
-            GPIOB_ITModeCfg(GPIO_Pin_14, GPIO_ITMode_FallEdge); //»Ö¸´Òı½ÅÏÂ½µÑØ»½ĞÑ
+            GPIOB_ITModeCfg(GPIO_Pin_14, GPIO_ITMode_FallEdge); //æ¢å¤å¼•è„šä¸‹é™æ²¿å”¤é†’
             
-            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//Á¢¿Ì¸üĞÂ¹ã²¥Êı¾İ
+            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//ç«‹åˆ»æ›´æ–°å¹¿æ’­æ•°æ®
 
         }
 
@@ -318,19 +361,19 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         }
         else
         {
-            //¸ù¾İ°´¼üÊ±¼äÀ´ÅĞ¶Ï³¤°´ºÍµ¥´ÎµÄÇø±ğ
+            //æ ¹æ®æŒ‰é”®æ—¶é—´æ¥åˆ¤æ–­é•¿æŒ‰å’Œå•æ¬¡çš„åŒºåˆ«
             if(Count_key4 > 5)
             {
-                Event_key4 = 2;
+                Event_key4 = 4;
             }
             else
             {
                 Event_key4 = 1;
             }
             Count_key4 = 0;
-            GPIOB_ITModeCfg(GPIO_Pin_15, GPIO_ITMode_FallEdge); //»Ö¸´Òı½ÅÏÂ½µÑØ»½ĞÑ
+            GPIOB_ITModeCfg(GPIO_Pin_15, GPIO_ITMode_FallEdge); //æ¢å¤å¼•è„šä¸‹é™æ²¿å”¤é†’
             
-            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//Á¢¿Ì¸üĞÂ¹ã²¥Êı¾İ
+            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//ç«‹åˆ»æ›´æ–°å¹¿æ’­æ•°æ®
 
         }
 
@@ -341,8 +384,6 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
     return 0;
 }
 
-
-SBP_GPIO_IQR_KEY_4_EVT
 /*********************************************************************
  * @fn      Broadcaster_ProcessTMOSMsg
  *
