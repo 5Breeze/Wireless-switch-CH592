@@ -69,72 +69,31 @@ void set_battery()
 }
 
 
+__HIGH_CODE
+void update_key_event(uint8_t* event_key, uint8_t* advert_data_pos) {
+    switch (*event_key) {
+        case 1:
+        case 4:
+            *advert_data_pos = *event_key;
+            *event_key = 0;
+            break;
+        default:
+            *advert_data_pos = 0;
+            break;
+    }
+}
 
 __HIGH_CODE
 void update_advert_data() {
     // 更新广播包中的电量数据
     set_battery();
     advertData[10] = status_flag;
-    //更新按键状态
-    switch(Event_key1)
-    {
-        case 1:
-            advertData[12] = Event_key1;
-            Event_key1 = 0;
-            break;
-        case 4:
-            advertData[12] = Event_key1;
-            Event_key1 = 0;
-            break;
-        default:
-            advertData[12] = 0;
-            break;
-    }
-    switch(Event_key2)
-    {
-        case 1:
-            advertData[14] = Event_key2;
-            Event_key2 = 0;
-            break;
-        case 4:
-            advertData[14] = Event_key2;
-            Event_key2 = 0;
-            break;
-        default:
-            advertData[14] = 0;
-            break;
-    }
-    switch(Event_key3)
-    {
-        case 1:
-            advertData[16] = Event_key3;
-            Event_key3 = 0;
-            break;
-        case 4:
-            advertData[16] = Event_key3;
-            Event_key3 = 0;
-            break;
-        default:
-            advertData[16] = 0;
-            break;
-    }
-    switch(Event_key4)
-    {
-        case 1:
-            advertData[18] = Event_key4;
-            Event_key4 = 0;
-            break;
-        case 4:
-            advertData[18] = Event_key4;
-            Event_key4 = 0;
-            break;
-        default:
-            advertData[18] = 0;
-            break;
-    }
-
+    // 更新按键状态
+    update_key_event(&Event_key1, &advertData[12]);
+    update_key_event(&Event_key2, &advertData[14]);
+    update_key_event(&Event_key3, &advertData[16]);
+    update_key_event(&Event_key4, &advertData[18]);
 }
-
 
 
 /*********************************************************************
@@ -186,6 +145,22 @@ void Broadcaster_Init()
     tmos_start_task(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT, 3200);//开机后2s第一次执行初始化广播数据任务
 }
 
+
+__HIGH_CODE
+void handle_key_event(uint32_t pin, uint8_t* count, uint16_t event, uint8_t* event_val) {
+    DelayMs(20);
+    if (GPIOB_ReadPortPin(pin) == 0) {
+        (*count)++;
+        tmos_start_task(Broadcaster_TaskID, event, 160);
+    } else {
+        if (*count > 5) *event_val = 4;
+        else *event_val = 1;
+        *count = 0;
+        GPIOB_ITModeCfg(pin, GPIO_ITMode_FallEdge);
+        tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);
+    }
+}
+
 /*********************************************************************
  * @fn      Broadcaster_ProcessEvent
  *
@@ -225,15 +200,18 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
 
     //广播更新
     if (events & SBP_UPDATE_ADV_EVT) {
-        // 数据采集并更新广播
-        update_advert_data();
-        GAP_UpdateAdvertisingData(0, TRUE, sizeof(advertData), advertData);
-
-        //如果当前广播关闭，则开启，否则不进行操作
+        //如果当前广播关闭，则开启，并在开启中更新数据，否则只更新数据
         if (adv_flag == 0)
         {
             adv_flag = 1;
             tmos_start_task(Broadcaster_TaskID, SBP_OPEN_ADV_EVT, 16);
+        }
+        else
+        {
+          // 数据采集并更新广播
+          update_advert_data();
+          GAP_UpdateAdvertisingData(0, TRUE, sizeof(advertData), advertData);
+
         }
 
         return (events ^ SBP_UPDATE_ADV_EVT);
@@ -246,17 +224,16 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         uint8_t initial_advertising_enable = 0;
         GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
 
-        tmos_start_task(Broadcaster_TaskID, SBP_ADV_IN_CONNECTION_EVT, 1600*60);
+        tmos_start_task(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT, 1600*60);
 
         adv_flag = 0;
         return (events ^ SBP_CLOSE_ADV_EVT);
     }
 
-
     //开启广播
     if(events & SBP_OPEN_ADV_EVT)
     {
-        tmos_start_task(Broadcaster_TaskID, SBP_CLOSE_ADV_EVT, 32000);
+        tmos_start_task(Broadcaster_TaskID, SBP_CLOSE_ADV_EVT, 1600*10);
 
         uint8_t initial_advertising_enable = 1;
         GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
@@ -265,118 +242,24 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         return (events ^ SBP_OPEN_ADV_EVT);
     }
 
-
-
     //按键服务程序
     if (events & SBP_GPIO_IQR_KEY_1_EVT) {
-        
-        if(GPIOB_ReadPortPin(GPIO_Pin_12) == 0)
-        {
-            Count_key1 ++ ;
-            tmos_start_task(Broadcaster_TaskID, SBP_GPIO_IQR_KEY_1_EVT, 160);//100ms
-        }
-        else
-        {
-            //根据按键时间来判断长按和单次的区别
-            if(Count_key1 > 5)
-            {
-                Event_key1 = 4;
-            }
-            else
-            {
-                Event_key1 = 1;
-            }
-            Count_key1 = 0;
-            GPIOB_ITModeCfg(GPIO_Pin_12, GPIO_ITMode_FallEdge); //恢复引脚下降沿唤醒
-            
-            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//立刻更新广播数据
-
-        }
-
+      handle_key_event(GPIO_Pin_12, &Count_key1, SBP_GPIO_IQR_KEY_1_EVT, &Event_key1);
         return (events ^ SBP_GPIO_IQR_KEY_1_EVT);
     }
 
     if (events & SBP_GPIO_IQR_KEY_2_EVT) {
-        
-        if(GPIOB_ReadPortPin(GPIO_Pin_13) == 0)
-        {
-            Count_key2 ++ ;
-            tmos_start_task(Broadcaster_TaskID, SBP_GPIO_IQR_KEY_2_EVT, 160);//100ms
-        }
-        else
-        {
-            //根据按键时间来判断长按和单次的区别
-            if(Count_key2 > 5)
-            {
-                Event_key2 = 4;
-            }
-            else
-            {
-                Event_key2 = 1;
-            }
-            Count_key2 = 0;
-            GPIOB_ITModeCfg(GPIO_Pin_13, GPIO_ITMode_FallEdge); //恢复引脚下降沿唤醒
-            
-            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//立刻更新广播数据
-
-        }
-
+      handle_key_event(GPIO_Pin_13, &Count_key2, SBP_GPIO_IQR_KEY_2_EVT, &Event_key2);
         return (events ^ SBP_GPIO_IQR_KEY_2_EVT);
     }
 
     if (events & SBP_GPIO_IQR_KEY_3_EVT) {
-        
-        if(GPIOB_ReadPortPin(GPIO_Pin_14) == 0)
-        {
-            Count_key3 ++ ;
-            tmos_start_task(Broadcaster_TaskID, SBP_GPIO_IQR_KEY_3_EVT, 160);//100ms
-        }
-        else
-        {
-            //根据按键时间来判断长按和单次的区别
-            if(Count_key3 > 5)
-            {
-                Event_key3 = 4;
-            }
-            else
-            {
-                Event_key3 = 1;
-            }
-            Count_key3 = 0;
-            GPIOB_ITModeCfg(GPIO_Pin_14, GPIO_ITMode_FallEdge); //恢复引脚下降沿唤醒
-            
-            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//立刻更新广播数据
-
-        }
-
+      handle_key_event(GPIO_Pin_14, &Count_key3, SBP_GPIO_IQR_KEY_3_EVT, &Event_key3);
         return (events ^ SBP_GPIO_IQR_KEY_3_EVT);
     }
 
     if (events & SBP_GPIO_IQR_KEY_4_EVT) {
-        
-        if(GPIOB_ReadPortPin(GPIO_Pin_15) == 0)
-        {
-            Count_key4 ++ ;
-            tmos_start_task(Broadcaster_TaskID, SBP_GPIO_IQR_KEY_4_EVT, 160);//100ms
-        }
-        else
-        {
-            //根据按键时间来判断长按和单次的区别
-            if(Count_key4 > 5)
-            {
-                Event_key4 = 4;
-            }
-            else
-            {
-                Event_key4 = 1;
-            }
-            Count_key4 = 0;
-            GPIOB_ITModeCfg(GPIO_Pin_15, GPIO_ITMode_FallEdge); //恢复引脚下降沿唤醒
-            
-            tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);//立刻更新广播数据
-
-        }
-
+      handle_key_event(GPIO_Pin_15, &Count_key4, SBP_GPIO_IQR_KEY_4_EVT, &Event_key4);
         return (events ^ SBP_GPIO_IQR_KEY_4_EVT);
     }
 
