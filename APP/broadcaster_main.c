@@ -77,7 +77,6 @@ int main(void)
     GPIOA_ModeCfg(GPIO_Pin_All, GPIO_ModeIN_PU);
     GPIOB_ModeCfg(GPIO_Pin_All, GPIO_ModeIN_PU);
 #endif
-
     /* 配置唤醒源为 GPIO - PB12-15 */
     GPIOB_ModeCfg(GPIO_Pin_12, GPIO_ModeIN_PU);
     GPIOB_ITModeCfg(GPIO_Pin_12, GPIO_ITMode_FallEdge); // 下降沿唤醒

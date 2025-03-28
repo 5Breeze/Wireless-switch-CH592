@@ -57,34 +57,35 @@ __HIGH_CODE
 void set_battery()
 {
     uint16_t battery_level = sample_battery_voltage();
-    if(battery_level > 3000){
+    if (battery_level > 3000) {
         status_flag = STATUS_FLAG_FULL_BATTERY; // 满电量
-    } else if(battery_level > 2800){
+    } else if (battery_level > 2800) {
         status_flag = STATUS_FLAG_MEDIUM_BATTERY; // 中等电量
-    } else if(battery_level > 2500){
-        status_flag = STATUS_FLAG_LOW_BATTERY;    // 低电量
+    } else if (battery_level > 2500) {
+        status_flag = STATUS_FLAG_LOW_BATTERY; // 低电量
     } else {
         status_flag = STATUS_FLAG_CRITICALLY_LOW_BATTERY; // 严重低电量
     }
 }
 
-
 __HIGH_CODE
-void update_key_event(uint8_t* event_key, uint8_t* advert_data_pos) {
+void update_key_event(uint8_t* event_key, uint8_t* advert_data_pos)
+{
     switch (*event_key) {
-        case 1:
-        case 4:
-            *advert_data_pos = *event_key;
-            *event_key = 0;
-            break;
-        default:
-            *advert_data_pos = 0;
-            break;
+    case 1:
+    case 4:
+        *advert_data_pos = *event_key;
+        *event_key = 0;
+        break;
+    default:
+        *advert_data_pos = 0;
+        break;
     }
 }
 
 __HIGH_CODE
-void update_advert_data() {
+void update_advert_data()
+{
     // 更新广播包中的电量数据
     set_battery();
     advertData[10] = status_flag;
@@ -94,7 +95,6 @@ void update_advert_data() {
     update_key_event(&Event_key3, &advertData[16]);
     update_key_event(&Event_key4, &advertData[18]);
 }
-
 
 /*********************************************************************
  * @fn      Broadcaster_Init
@@ -119,8 +119,8 @@ void Broadcaster_Init()
         // Device starts advertising upon initialization，默认使用所有信道
         uint8_t initial_advertising_enable = TRUE;
         uint8_t initial_adv_event_type = GAP_ADTYPE_ADV_NONCONN_IND; // 不可连接的非定向广播
-        uint8_t initial_adv_filter_type = GAP_FILTER_POLICY_ALL; //允许来自任何设备的扫描和连接请求
-        
+        uint8_t initial_adv_filter_type = GAP_FILTER_POLICY_ALL; // 允许来自任何设备的扫描和连接请求
+
         // Set the GAP Role Parameters
         GAPRole_SetParameter(GAPROLE_ADV_FILTER_POLICY, sizeof(uint8_t), &initial_adv_filter_type);
         GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
@@ -138,23 +138,29 @@ void Broadcaster_Init()
 
     update_advert_data();
 
-    //开机后初始化蓝牙广播
-    tmos_set_event(Broadcaster_TaskID, SBP_START_DEVICE_EVT); 
+    // 开机后初始化蓝牙广播
+    tmos_set_event(Broadcaster_TaskID, SBP_START_DEVICE_EVT);
 
     // 设置定时读取电压并更新广播
-    tmos_start_task(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT, 3200);//开机后2s第一次执行初始化广播数据任务
+    tmos_start_task(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT, 3200); // 开机后2s第一次执行初始化广播数据任务
+
+
+    tmos_start_task(Broadcaster_TaskID, SBP_CLOSE_ADV_EVT, 1600*30); // 开机后30s第一次执行关闭广播数据任务
+    
 }
 
-
 __HIGH_CODE
-void handle_key_event(uint32_t pin, uint8_t* count, uint16_t event, uint8_t* event_val) {
+void handle_key_event(uint32_t pin, uint8_t* count, uint16_t event, uint8_t* event_val)
+{
     DelayMs(20);
     if (GPIOB_ReadPortPin(pin) == 0) {
         (*count)++;
         tmos_start_task(Broadcaster_TaskID, event, 160);
     } else {
-        if (*count > 5) *event_val = 4;
-        else *event_val = 1;
+        if (*count > 5)
+            *event_val = 4;
+        else
+            *event_val = 1;
         *count = 0;
         GPIOB_ITModeCfg(pin, GPIO_ITMode_FallEdge);
         tmos_set_event(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT);
@@ -190,7 +196,7 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         return (events ^ SYS_EVENT_MSG);
     }
 
-    //蓝牙初始化
+    // 蓝牙初始化
     if (events & SBP_START_DEVICE_EVT) {
         // Start the Device
         GAPRole_BroadcasterStartDevice(&Broadcaster_BroadcasterCBs);
@@ -198,42 +204,35 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         return (events ^ SBP_START_DEVICE_EVT);
     }
 
-    //广播更新
+    // 广播更新
     if (events & SBP_UPDATE_ADV_EVT) {
-        //如果当前广播关闭，则开启，并在开启中更新数据，否则只更新数据
-        if (adv_flag == 0)
-        {
+        // 如果当前广播关闭，则开启，并在开启中更新数据，否则只更新数据
+        if (adv_flag == 0) {
             adv_flag = 1;
             tmos_start_task(Broadcaster_TaskID, SBP_OPEN_ADV_EVT, 16);
-        }
-        else
-        {
-          // 数据采集并更新广播
-          update_advert_data();
-          GAP_UpdateAdvertisingData(0, TRUE, sizeof(advertData), advertData);
-
+        } else {
+            // 数据采集并更新广播
+            update_advert_data();
+            GAP_UpdateAdvertisingData(0, TRUE, sizeof(advertData), advertData);
         }
 
         return (events ^ SBP_UPDATE_ADV_EVT);
     }
 
-
-    //关闭广播数据，并启动60s一次的定时广播
-    if(events & SBP_CLOSE_ADV_EVT)
-    {
+    // 关闭广播数据，并启动60s一次的定时广播
+    if (events & SBP_CLOSE_ADV_EVT) {
         uint8_t initial_advertising_enable = 0;
         GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
 
-        tmos_start_task(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT, 1600*60);
+        tmos_start_task(Broadcaster_TaskID, SBP_UPDATE_ADV_EVT, 1600 * 60);
 
         adv_flag = 0;
         return (events ^ SBP_CLOSE_ADV_EVT);
     }
 
-    //开启广播
-    if(events & SBP_OPEN_ADV_EVT)
-    {
-        tmos_start_task(Broadcaster_TaskID, SBP_CLOSE_ADV_EVT, 1600*10);
+    // 开启广播
+    if (events & SBP_OPEN_ADV_EVT) {
+        tmos_start_task(Broadcaster_TaskID, SBP_CLOSE_ADV_EVT, 1600 * 10);
 
         uint8_t initial_advertising_enable = 1;
         GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
@@ -242,27 +241,26 @@ uint16_t Broadcaster_ProcessEvent(uint8_t task_id, uint16_t events)
         return (events ^ SBP_OPEN_ADV_EVT);
     }
 
-    //按键服务程序
+    // 按键服务程序
     if (events & SBP_GPIO_IQR_KEY_1_EVT) {
-      handle_key_event(GPIO_Pin_12, &Count_key1, SBP_GPIO_IQR_KEY_1_EVT, &Event_key1);
+        handle_key_event(GPIO_Pin_12, &Count_key1, SBP_GPIO_IQR_KEY_1_EVT, &Event_key1);
         return (events ^ SBP_GPIO_IQR_KEY_1_EVT);
     }
 
     if (events & SBP_GPIO_IQR_KEY_2_EVT) {
-      handle_key_event(GPIO_Pin_13, &Count_key2, SBP_GPIO_IQR_KEY_2_EVT, &Event_key2);
+        handle_key_event(GPIO_Pin_13, &Count_key2, SBP_GPIO_IQR_KEY_2_EVT, &Event_key2);
         return (events ^ SBP_GPIO_IQR_KEY_2_EVT);
     }
 
     if (events & SBP_GPIO_IQR_KEY_3_EVT) {
-      handle_key_event(GPIO_Pin_14, &Count_key3, SBP_GPIO_IQR_KEY_3_EVT, &Event_key3);
+        handle_key_event(GPIO_Pin_14, &Count_key3, SBP_GPIO_IQR_KEY_3_EVT, &Event_key3);
         return (events ^ SBP_GPIO_IQR_KEY_3_EVT);
     }
 
     if (events & SBP_GPIO_IQR_KEY_4_EVT) {
-      handle_key_event(GPIO_Pin_15, &Count_key4, SBP_GPIO_IQR_KEY_4_EVT, &Event_key4);
+        handle_key_event(GPIO_Pin_15, &Count_key4, SBP_GPIO_IQR_KEY_4_EVT, &Event_key4);
         return (events ^ SBP_GPIO_IQR_KEY_4_EVT);
     }
-
 
     return 0;
 }
